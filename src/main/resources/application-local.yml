@@ -1,0 +1,7 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/probetag
+    username: probetag
+    password: probetag
+  jpa:
+    show-sql: true

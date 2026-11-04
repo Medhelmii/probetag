@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgres:16
+    container_name: probetag-db
+    environment:
+      POSTGRES_DB: probetag
+      POSTGRES_USER: probetag
+      POSTGRES_PASSWORD: probetag
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  mail:
+    image: axllent/mailpit
+    container_name: probetag-mail
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+
+volumes:
+  pgdata:
