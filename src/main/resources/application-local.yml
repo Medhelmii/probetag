@@ -5,3 +5,7 @@ spring:
     password: probetag
   jpa:
     show-sql: true
+app:
+  jwt:
+    secret: FfEWcgI0s0ztCIVyUCJSoBFEDorq8hYiN+8QHBycV/Y/7OVTKu37Yad20+lDGdW7
+    expiration-minutes: 60
