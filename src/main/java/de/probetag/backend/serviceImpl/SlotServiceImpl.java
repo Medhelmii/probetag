@@ -2,12 +2,14 @@ package de.probetag.backend.serviceImpl;
 
 import de.probetag.backend.dto.SlotRequest;
 import de.probetag.backend.dto.SlotResponse;
+import de.probetag.backend.entity.BookingStatus;
 import de.probetag.backend.entity.Company;
 import de.probetag.backend.entity.Slot;
 import de.probetag.backend.entity.SlotStatus;
 import de.probetag.backend.exception.BadRequestException;
 import de.probetag.backend.exception.ForbiddenException;
 import de.probetag.backend.exception.ResourceNotFoundException;
+import de.probetag.backend.repository.BookingRepository;
 import de.probetag.backend.repository.CompanyRepository;
 import de.probetag.backend.repository.SlotRepository;
 import de.probetag.backend.service.SlotService;
@@ -26,6 +28,7 @@ public class SlotServiceImpl implements SlotService {
 
     private final SlotRepository slotRepository;
     private final CompanyRepository companyRepository;
+    private final BookingRepository bookingRepository;
 
     @Override
     @Transactional
@@ -59,6 +62,11 @@ public class SlotServiceImpl implements SlotService {
     public SlotResponse cancel(UUID userId, UUID slotId) {
         Slot slot = getOwnSlot(userId, slotId);
         slot.setStatus(SlotStatus.CANCELLED);
+
+        bookingRepository.findBySlotIdOrderByCreatedAtAsc(slotId).stream()
+                .filter(b -> b.getStatus() == BookingStatus.CONFIRMED)
+                .forEach(b -> b.setStatus(BookingStatus.CANCELLED));
+
         return SlotResponse.from(slot);
     }
 
