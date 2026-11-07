@@ -42,4 +42,8 @@ public class Company {
 
     @Column(nullable = false)
     private boolean verified = false;
+    /** Termine sind nur sichtbar, wenn das Unternehmen freigeschaltet und das Konto aktiv ist. */
+    public boolean isPublic() {
+        return verified && user.isEnabled();
+    }
 }

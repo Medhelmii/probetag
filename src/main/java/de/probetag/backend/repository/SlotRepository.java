@@ -23,8 +23,11 @@ public interface SlotRepository extends JpaRepository<Slot, UUID> {
     @Query("""
             select s from Slot s
             join fetch s.company c
+            join c.user u
             where s.status = :status
               and s.startsAt > :from
+              and c.verified = true
+              and u.enabled = true
               and (:city is null or lower(c.city) = :city)
               and (:sector is null or lower(c.sector) = :sector)
             order by s.startsAt

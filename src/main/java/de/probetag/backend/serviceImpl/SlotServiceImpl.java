@@ -96,7 +96,11 @@ public class SlotServiceImpl implements SlotService {
     @Override
     @Transactional(readOnly = true)
     public SlotResponse findById(UUID slotId) {
-        return SlotResponse.from(getSlot(slotId));
+        Slot slot = getSlot(slotId);
+        if (!slot.getCompany().isPublic()) {
+            throw new ResourceNotFoundException("Termin nicht gefunden");
+        }
+        return SlotResponse.from(slot);
     }
 
     @Override

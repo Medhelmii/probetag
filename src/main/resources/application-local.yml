@@ -16,3 +16,6 @@ app:
     from: "Probetag <noreply@probetag.de>"
   reminder:
     cron: "0 * * * * *"
+  admin:
+    email: admin@probetag.de
+    password: admin12345

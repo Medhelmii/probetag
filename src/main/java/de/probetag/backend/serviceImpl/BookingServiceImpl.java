@@ -40,6 +40,8 @@ public class BookingServiceImpl implements BookingService {
     private final ParticipantRepository participantRepository;
     private final CompanyRepository companyRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private static final int MAX_NO_SHOWS = 3;
+    private static final Duration NO_SHOW_PERIOD = Duration.ofDays(30);
 
     // ---------- Teilnehmerin ----------
 
@@ -47,10 +49,21 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     public BookingResponse book(UUID userId, UUID slotId) {
         Participant participant = getParticipantOfUser(userId);
+        // 0. Gesperrt wegen zu vieler No-Shows?
+        long noShows = bookingRepository.countByParticipantAndStatusSince(
+                participant.getId(), BookingStatus.NO_SHOW, Instant.now().minus(NO_SHOW_PERIOD));
+        if (noShows >= MAX_NO_SHOWS) {
+            throw new ForbiddenException(
+                    "Du bist in den letzten 30 Tagen " + noShows + "× nicht erschienen "
+                            + "und kannst deshalb vorübergehend keine Termine buchen");
+        }
 
         // 1. Termin SPERREN: wer gleichzeitig bucht, wartet hier
         Slot slot = slotRepository.findByIdForUpdate(slotId)
                 .orElseThrow(() -> new ResourceNotFoundException("Termin nicht gefunden"));
+        if (!slot.getCompany().isPublic()) {
+            throw new ResourceNotFoundException("Termin nicht gefunden");
+        }
 
         // 2. Ist der Termin buchbar?
         if (slot.getStatus() != SlotStatus.OPEN) {

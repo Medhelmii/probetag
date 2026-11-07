@@ -1,9 +1,6 @@
 package de.probetag.backend.listener;
 
-import de.probetag.backend.event.BookingCancelledEvent;
-import de.probetag.backend.event.BookingConfirmedEvent;
-import de.probetag.backend.event.SlotCancelledEvent;
-import de.probetag.backend.event.UserRegisteredEvent;
+import de.probetag.backend.event.*;
 import de.probetag.backend.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
@@ -89,6 +86,17 @@ public class NotificationListener {
                             + "\" am " + when + " abgesagt. Deine Buchung wurde storniert.\n\n"
                             + "Schau gerne nach anderen Terminen auf Probetag.\n\nDein Probetag-Team");
         }
+    }
+
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onCompanyVerified(CompanyVerifiedEvent event) {
+        emailService.send(event.email(),
+                "Dein Unternehmen ist freigeschaltet!",
+                "Hallo " + event.companyName() + ",\n\n"
+                        + "wir haben dein Profil geprüft und freigeschaltet. "
+                        + "Deine Probetage sind ab jetzt für alle sichtbar.\n\n"
+                        + "Viel Erfolg bei der Suche nach neuen Talenten!\nDein Probetag-Team");
     }
 
     private static String format(Instant instant) {

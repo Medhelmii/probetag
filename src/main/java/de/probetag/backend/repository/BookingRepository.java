@@ -35,4 +35,15 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     List<Booking> findForReminder(@Param("status") BookingStatus status,
                                   @Param("from") Instant from,
                                   @Param("to") Instant to);
+
+
+    @Query("""
+            select count(b) from Booking b
+            where b.participant.id = :participantId
+              and b.status = :status
+              and b.slot.startsAt > :since
+            """)
+    long countByParticipantAndStatusSince(@Param("participantId") UUID participantId,
+                                          @Param("status") BookingStatus status,
+                                          @Param("since") Instant since);
 }
