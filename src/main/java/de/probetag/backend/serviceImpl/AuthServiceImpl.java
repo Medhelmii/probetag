@@ -8,6 +8,7 @@ import de.probetag.backend.entity.Company;
 import de.probetag.backend.entity.Participant;
 import de.probetag.backend.entity.Role;
 import de.probetag.backend.entity.User;
+import de.probetag.backend.event.UserRegisteredEvent;
 import de.probetag.backend.exception.EmailAlreadyUsedException;
 import de.probetag.backend.exception.InvalidCredentialsException;
 import de.probetag.backend.repository.CompanyRepository;
@@ -16,6 +17,7 @@ import de.probetag.backend.repository.UserRepository;
 import de.probetag.backend.security.JwtService;
 import de.probetag.backend.service.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +33,7 @@ public class AuthServiceImpl implements AuthService {
     private final CompanyRepository companyRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -45,7 +48,10 @@ public class AuthServiceImpl implements AuthService {
         participant.setMotivation(request.motivation());
         participantRepository.save(participant);
 
+
+        eventPublisher.publishEvent(new UserRegisteredEvent(user.getEmail(), participant.getFirstName()));
         return toResponse(user);
+
     }
 
     @Override

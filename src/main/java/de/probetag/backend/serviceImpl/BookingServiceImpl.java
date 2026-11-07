@@ -8,6 +8,8 @@ import de.probetag.backend.entity.Company;
 import de.probetag.backend.entity.Participant;
 import de.probetag.backend.entity.Slot;
 import de.probetag.backend.entity.SlotStatus;
+import de.probetag.backend.event.BookingCancelledEvent;
+import de.probetag.backend.event.BookingConfirmedEvent;
 import de.probetag.backend.exception.BadRequestException;
 import de.probetag.backend.exception.ConflictException;
 import de.probetag.backend.exception.ForbiddenException;
@@ -18,6 +20,7 @@ import de.probetag.backend.repository.ParticipantRepository;
 import de.probetag.backend.repository.SlotRepository;
 import de.probetag.backend.service.BookingService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +39,7 @@ public class BookingServiceImpl implements BookingService {
     private final SlotRepository slotRepository;
     private final ParticipantRepository participantRepository;
     private final CompanyRepository companyRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ---------- Teilnehmerin ----------
 
@@ -77,7 +81,22 @@ public class BookingServiceImpl implements BookingService {
         }
         booking.setStatus(BookingStatus.CONFIRMED);
 
-        return BookingResponse.from(bookingRepository.save(booking));
+        Booking saved = bookingRepository.save(booking);
+
+        Company company = slot.getCompany();
+        eventPublisher.publishEvent(new BookingConfirmedEvent(
+                participant.getUser().getEmail(),
+                participant.getFirstName(),
+                participant.getLastName(),
+                company.getUser().getEmail(),
+                company.getName(),
+                slot.getJobTitle(),
+                slot.getStartsAt(),
+                company.getAddress(),
+                company.getCity(),
+                slot.getDressCode()));
+
+        return BookingResponse.from(saved);
     }   // <- hier endet die Transaktion und die Sperre wird freigegeben
 
     @Override
@@ -108,6 +127,13 @@ public class BookingServiceImpl implements BookingService {
         }
 
         booking.setStatus(BookingStatus.CANCELLED);
+        Slot slot = booking.getSlot();
+        eventPublisher.publishEvent(new BookingCancelledEvent(
+                slot.getCompany().getUser().getEmail(),
+                slot.getCompany().getName(),
+                participant.getFirstName() + " " + participant.getLastName(),
+                slot.getJobTitle(),
+                slot.getStartsAt()));
         return BookingResponse.from(booking);
     }
 

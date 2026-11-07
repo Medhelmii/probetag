@@ -34,6 +34,9 @@ public class Booking {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(name = "reminder_sent_at")
+    private Instant reminderSentAt;
+
     @Version
     private int version;
 

@@ -6,6 +6,7 @@ import de.probetag.backend.entity.BookingStatus;
 import de.probetag.backend.entity.Company;
 import de.probetag.backend.entity.Slot;
 import de.probetag.backend.entity.SlotStatus;
+import de.probetag.backend.event.SlotCancelledEvent;
 import de.probetag.backend.exception.BadRequestException;
 import de.probetag.backend.exception.ForbiddenException;
 import de.probetag.backend.exception.ResourceNotFoundException;
@@ -14,6 +15,7 @@ import de.probetag.backend.repository.CompanyRepository;
 import de.probetag.backend.repository.SlotRepository;
 import de.probetag.backend.service.SlotService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +31,7 @@ public class SlotServiceImpl implements SlotService {
     private final SlotRepository slotRepository;
     private final CompanyRepository companyRepository;
     private final BookingRepository bookingRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -63,9 +66,19 @@ public class SlotServiceImpl implements SlotService {
         Slot slot = getOwnSlot(userId, slotId);
         slot.setStatus(SlotStatus.CANCELLED);
 
-        bookingRepository.findBySlotIdOrderByCreatedAtAsc(slotId).stream()
+        List<SlotCancelledEvent.Recipient> recipients = bookingRepository.findBySlotIdOrderByCreatedAtAsc(slotId)
+                .stream()
                 .filter(b -> b.getStatus() == BookingStatus.CONFIRMED)
-                .forEach(b -> b.setStatus(BookingStatus.CANCELLED));
+                .peek(b -> b.setStatus(BookingStatus.CANCELLED))
+                .map(b -> new SlotCancelledEvent.Recipient(
+                        b.getParticipant().getUser().getEmail(),
+                        b.getParticipant().getFirstName()))
+                .toList();
+
+        if (!recipients.isEmpty()) {
+            eventPublisher.publishEvent(new SlotCancelledEvent(
+                    recipients, slot.getCompany().getName(), slot.getJobTitle(), slot.getStartsAt()));
+        }
 
         return SlotResponse.from(slot);
     }

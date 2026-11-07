@@ -5,7 +5,14 @@ spring:
     password: probetag
   jpa:
     show-sql: true
+  mail:
+    host: localhost
+    port: 1025
 app:
   jwt:
     secret: FfEWcgI0s0ztCIVyUCJSoBFEDorq8hYiN+8QHBycV/Y/7OVTKu37Yad20+lDGdW7
     expiration-minutes: 60
+  mail:
+    from: "Probetag <noreply@probetag.de>"
+  reminder:
+    cron: "0 * * * * *"
