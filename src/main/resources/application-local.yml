@@ -19,3 +19,5 @@ app:
   admin:
     email: admin@probetag.de
     password: admin12345
+  cors:
+    allowed-origins: http://localhost:4200

@@ -5,11 +5,13 @@ import de.probetag.backend.dto.LoginRequest;
 import de.probetag.backend.dto.RegisterCompanyRequest;
 import de.probetag.backend.dto.RegisterParticipantRequest;
 import de.probetag.backend.service.AuthService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "Auth", description = "Registrierung und Login")
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
