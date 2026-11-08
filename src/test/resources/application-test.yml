@@ -1,0 +1,13 @@
+spring:
+  mail:
+    host: localhost
+    port: 1025
+
+app:
+  jwt:
+    secret: dGVzdC1zY2hsdWVzc2VsLW51ci1mdWVyLWF1dG9tYXRpc2NoZS10ZXN0cy0xMjM0NTY3ODkw
+    expiration-minutes: 60
+  mail:
+    from: "Probetag Test <test@probetag.de>"
+  cors:
+    allowed-origins: http://localhost:4200
