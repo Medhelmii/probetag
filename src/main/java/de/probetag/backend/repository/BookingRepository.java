@@ -1,5 +1,6 @@
 package de.probetag.backend.repository;
 
+import de.probetag.backend.dto.SlotBookingCount;
 import de.probetag.backend.entity.Booking;
 import de.probetag.backend.entity.BookingStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -7,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -46,4 +48,13 @@ public interface BookingRepository extends JpaRepository<Booking, UUID> {
     long countByParticipantAndStatusSince(@Param("participantId") UUID participantId,
                                           @Param("status") BookingStatus status,
                                           @Param("since") Instant since);
+    @Query("""
+            select new de.probetag.backend.dto.SlotBookingCount(b.slot.id, count(b))
+            from Booking b
+            where b.slot.id in :slotIds
+              and b.status = :status
+            group by b.slot.id
+            """)
+    List<SlotBookingCount> countByStatusForSlots(@Param("slotIds") Collection<UUID> slotIds,
+                                                 @Param("status") BookingStatus status);
 }

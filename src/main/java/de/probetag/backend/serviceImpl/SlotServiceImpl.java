@@ -1,5 +1,6 @@
 package de.probetag.backend.serviceImpl;
 
+import de.probetag.backend.dto.SlotBookingCount;
 import de.probetag.backend.dto.SlotRequest;
 import de.probetag.backend.dto.SlotResponse;
 import de.probetag.backend.entity.BookingStatus;
@@ -22,7 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -43,7 +46,7 @@ public class SlotServiceImpl implements SlotService {
         slot.setCompany(company);
         applyRequest(slot, request);
 
-        return SlotResponse.from(slotRepository.save(slot));
+        return toResponse(slotRepository.save(slot));
     }
 
     @Override
@@ -57,7 +60,7 @@ public class SlotServiceImpl implements SlotService {
         }
         applyRequest(slot, request);
 
-        return SlotResponse.from(slot);
+        return  toResponse(slot);
     }
 
     @Override
@@ -80,17 +83,14 @@ public class SlotServiceImpl implements SlotService {
                     recipients, slot.getCompany().getName(), slot.getJobTitle(), slot.getStartsAt()));
         }
 
-        return SlotResponse.from(slot);
+        return toResponse(slot);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<SlotResponse> findMySlots(UUID userId) {
         Company company = getCompanyOfUser(userId);
-        return slotRepository.findByCompanyIdOrderByStartsAtAsc(company.getId())
-                .stream()
-                .map(SlotResponse::from)
-                .toList();
+        return toResponses(slotRepository.findByCompanyIdOrderByStartsAtAsc(company.getId()));
     }
 
     @Override
@@ -100,17 +100,14 @@ public class SlotServiceImpl implements SlotService {
         if (!slot.getCompany().isPublic()) {
             throw new ResourceNotFoundException("Termin nicht gefunden");
         }
-        return SlotResponse.from(slot);
+        return toResponse(slot);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<SlotResponse> search(String city, String sector, Instant from) {
         Instant start = (from != null) ? from : Instant.now();
-        return slotRepository.search(SlotStatus.OPEN, start, normalize(city), normalize(sector))
-                .stream()
-                .map(SlotResponse::from)
-                .toList();
+        return toResponses(slotRepository.search(SlotStatus.OPEN, start, normalize(city), normalize(sector)));
     }
 
     // ---------- Hilfsmethoden ----------
@@ -151,5 +148,23 @@ public class SlotServiceImpl implements SlotService {
 
     private static String normalize(String value) {
         return (value == null || value.isBlank()) ? null : value.trim().toLowerCase(Locale.ROOT);
+    }
+    private SlotResponse toResponse(Slot slot) {
+        long booked = bookingRepository.countBySlotIdAndStatus(slot.getId(), BookingStatus.CONFIRMED);
+        return SlotResponse.from(slot, booked);
+    }
+
+    private List<SlotResponse> toResponses(List<Slot> slots) {
+        if (slots.isEmpty()) {
+            return List.of();
+        }
+        List<UUID> ids = slots.stream().map(Slot::getId).toList();
+        Map<UUID, Long> counts = bookingRepository.countByStatusForSlots(ids, BookingStatus.CONFIRMED)
+                .stream()
+                .collect(Collectors.toMap(SlotBookingCount::slotId, SlotBookingCount::count));
+
+        return slots.stream()
+                .map(slot -> SlotResponse.from(slot, counts.getOrDefault(slot.getId(), 0L)))
+                .toList();
     }
 }
